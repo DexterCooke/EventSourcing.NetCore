@@ -1,9 +1,8 @@
-# .github/workflows/publish.docker.yml
 name: Publish Docker
 
 on:
-  - push
-  - workflow_dispatch   # lets you run it manually from Actions
+  push:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,9 +12,9 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v4
 
-      # Only log in on main AND when secrets exist (skips on your branch/fork)
-      - name: Login to DockerHub
-        if: ${{ github.ref == 'refs/heads/main' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      # Only attempt login on main (avoid 'secrets' in the if:)
+      - name: Login to DockerHub (main only)
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -29,10 +28,10 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v4
         with:
-          # must be a boolean expression, not a plain string
+          # must be a boolean expression
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: oskardudycz/eventsourcing.netcore:latest
 
       - name: Image digest
-        if: ${{ steps.docker_build.outputs.digest != '' }}
+        if: ${{ steps.docker_build.outputs.digest }}
         run: echo ${{ steps.docker_build.outputs.digest }}
